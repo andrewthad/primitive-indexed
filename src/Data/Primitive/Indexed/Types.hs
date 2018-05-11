@@ -13,11 +13,13 @@ module Data.Primitive.Indexed.Types
   , descendM
   , ascend
   , descend
-  , bound
+  , reflect
   ) where
 
 import Data.Primitive.Indexed.Unsafe
 
+-- | A strict left monadic fold over the ascending indices from zero up to
+-- a given length.
 ascendM :: forall m n a. (Monoid a, Monad m) => (Index n -> m a) -> Length n -> m a
 {-# INLINE ascendM #-}
 ascendM f (Length n) = go 0 mempty
@@ -27,6 +29,8 @@ ascendM f (Length n) = go 0 mempty
     then f (Index ix) >>= go (ix + 1)
     else pure a
 
+-- | A strict monadic left fold over the descending indices from a given length
+-- down to zero.
 descendM :: forall m n a. (Monoid a, Monad m) => (Index n -> m a) -> Length n -> m a
 {-# INLINE descendM #-}
 descendM f (Length n) = go (n - 1) mempty
@@ -36,7 +40,7 @@ descendM f (Length n) = go (n - 1) mempty
     then f (Index ix) >>= go (ix - 1)
     else pure a
 
--- | A strict left fold over the the ascending indices from zero up to
+-- | A strict left fold over the ascending indices from zero up to
 -- a given length.
 ascend :: forall n a. (a -> Index n -> a) -> a -> Length n -> a
 {-# INLINE ascend #-}
@@ -47,7 +51,7 @@ ascend f a0 (Length n) = go 0 a0
     then go (ix + 1) (f a (Index ix))
     else a
 
--- | A strict left fold over the the descending indices from a given length
+-- | A strict left fold over the descending indices from a given length
 -- down to zero.
 descend :: forall n a. (a -> Index n -> a) -> a -> Length n -> a
 {-# INLINE descend #-}
@@ -58,8 +62,15 @@ descend f a0 (Length n) = go (n - 1) a0
     then go (ix - 1) (f a (Index ix))
     else a
 
--- | Given an 'Index', return the smallest 'Length' that contains the index.
-bound :: Index n -> Length n
-{-# INLINE bound #-}
-bound (Index n) = Length (n + 1)
+-- | Reflect an index about the middle of the length. For a length of 5 this
+-- has the following effect:
+--
+-- > 0 ==> 4
+-- > 1 ==> 3
+-- > 2 ==> 2
+-- > 3 ==> 1
+-- > 4 ==> 0
+reflect :: Length n -> Index n -> Index n
+{-# INLINE reflect #-}
+reflect (Length n) (Index i) = Index ((n - i) - 1)
 

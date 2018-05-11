@@ -3,8 +3,10 @@
 {-# OPTIONS_GHC -Wall -O2 #-}
 
 module Data.Primitive.Indexed.Array
-  ( Vector
+  ( -- * Types
+    Vector
   , MutableVector
+    -- * Primops
   , new
   , index
   , read
@@ -14,15 +16,17 @@ module Data.Primitive.Indexed.Array
   , unsafeFreeze
   , forget
   , with
+    -- * Functions
   , zipWith
+  , reverse
   ) where
 
-import Prelude hiding (read,length,zipWith)
+import Prelude hiding (read,length,zipWith,reverse)
 import Control.Monad.Primitive (PrimMonad,PrimState)
 import Control.Monad.ST (runST)
 import Data.Primitive.Array
 import Data.Primitive.Indexed.Unsafe (Vector(..),MutableVector(..),Index(..),Length(..))
-import Data.Primitive.Indexed.Types (ascendM)
+import Data.Primitive.Indexed.Types (ascendM,reflect)
 
 new :: PrimMonad m => Length n -> a -> m (MutableVector n (PrimState m) a)
 {-# INLINE new #-}
@@ -69,8 +73,17 @@ zipWith :: (a -> b -> c) -> Vector n a -> Vector n b -> Vector n c
 zipWith f v1 v2 = runST $ do
   let !sz = length v1
   mvec <- new sz errorThunk
-  ascendM (\ix -> let !c = f (index v1 ix) (index v2 ix) in write mvec ix c) (length v1)
+  ascendM (\ix -> let !c = f (index v1 ix) (index v2 ix) in write mvec ix c) sz
   unsafeFreeze mvec
+
+-- | Reverse a vector
+reverse :: Vector n a -> Vector n a
+reverse v = runST $ do
+  let !sz = length v
+  mvec <- new sz errorThunk
+  ascendM (\ix -> let !a = index v ix in write mvec (reflect sz ix) a) sz
+  unsafeFreeze mvec
+  
 
 errorThunk :: a
 {-# NOINLINE errorThunk #-}
