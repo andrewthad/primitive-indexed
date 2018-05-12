@@ -14,6 +14,8 @@ module Data.Primitive.Indexed.Types
   , ascend
   , descend
   , reflect
+  , unindex
+  , modulo
   ) where
 
 import Data.Primitive.Indexed.Unsafe
@@ -73,4 +75,19 @@ descend f a0 (Length n) = go (n - 1) a0
 reflect :: Length n -> Index n -> Index n
 {-# INLINE reflect #-}
 reflect (Length n) (Index i) = Index ((n - i) - 1)
+
+-- | Convert an index to an integer, discarding the information
+-- about how it relates to a length.
+unindex :: Index n -> Int
+unindex (Index n) = n
+
+-- | Convert a length to an integer, discarding the information
+-- about how it relates to indices and other lengths.
+unlength :: Length n -> Int
+unlength (Length n) = n
+
+-- | Convert an integer to an index by using modulus to ensure that
+-- it is bounded by the length.
+modulo :: Int -> Length n -> Index n
+modulo i (Length n) = Index (mod i n)
 
