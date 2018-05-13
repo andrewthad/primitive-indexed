@@ -14,6 +14,7 @@ module Data.Primitive.Indexed.Array
   , length
   , size
   , unsafeFreeze
+    -- * Array Interop
   , forget
   , with
     -- * Functions
