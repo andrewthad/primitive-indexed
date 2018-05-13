@@ -15,6 +15,7 @@ module Data.Primitive.Indexed.Types
   , descend
   , reflect
   , unindex
+  , unlength
   , modulo
   ) where
 
