@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_GHC -Wall -O2 #-}
 
@@ -8,6 +9,7 @@ module Data.Primitive.Indexed.Array
   , MutableVector
     -- * Primops
   , new
+  , replicate
   , index
   , read
   , write
@@ -20,18 +22,26 @@ module Data.Primitive.Indexed.Array
     -- * Functions
   , zipWith
   , reverse
+  , backpermute
   ) where
 
-import Prelude hiding (read,length,zipWith,reverse)
+import Prelude hiding (read,length,zipWith,reverse,replicate)
 import Control.Monad.Primitive (PrimMonad,PrimState)
 import Control.Monad.ST (runST)
 import Data.Primitive.Array
 import Data.Primitive.Indexed.Unsafe (Vector(..),MutableVector(..),Index(..),Length(..))
-import Data.Primitive.Indexed.Types (ascendM,reflect)
+import Data.Primitive.Indexed.Types (ascendM,reflect,PrimVector)
 
-new :: PrimMonad m => Length n -> a -> m (MutableVector n (PrimState m) a)
+import qualified Data.Primitive.Indexed.PrimArray as PV
+
+new :: PrimMonad m => Length n -> m (MutableVector n (PrimState m) a)
 {-# INLINE new #-}
-new (Length n) a = fmap MutableVector (newArray n a)
+new n = replicate n errorThunk
+
+replicate :: PrimMonad m => Length n -> a -> m (MutableVector n (PrimState m) a)
+{-# INLINE replicate #-}
+replicate (Length n) a = fmap MutableVector (newArray n a)
+
 
 index :: Vector n a -> Index n -> a
 {-# INLINE index #-}
@@ -73,7 +83,7 @@ unsafeFreeze (MutableVector marr) = fmap Vector (unsafeFreezeArray marr)
 zipWith :: (a -> b -> c) -> Vector n a -> Vector n b -> Vector n c
 zipWith f v1 v2 = runST $ do
   let !sz = length v1
-  mvec <- new sz errorThunk
+  mvec <- new sz
   ascendM (\ix -> let !c = f (index v1 ix) (index v2 ix) in write mvec ix c) sz
   unsafeFreeze mvec
 
@@ -81,10 +91,18 @@ zipWith f v1 v2 = runST $ do
 reverse :: Vector n a -> Vector n a
 reverse v = runST $ do
   let !sz = length v
-  mvec <- new sz errorThunk
+  mvec <- new sz
   ascendM (\ix -> let !a = index v ix in write mvec (reflect sz ix) a) sz
   unsafeFreeze mvec
   
+-- | /O(n)/ Yield the vector obtained by replacing each element @i@ of the
+-- index vector by @'index' xs i@.
+backpermute :: forall n m a. Vector n a -> PrimVector m (Index n) -> Vector m a
+backpermute v ixs = runST $ do
+  let !sz = PV.length ixs
+  mvec <- new sz
+  ascendM (\ix -> let !a = index v (PV.index ixs ix) in write mvec ix a) sz
+  unsafeFreeze mvec
 
 errorThunk :: a
 {-# NOINLINE errorThunk #-}

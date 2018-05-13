@@ -20,6 +20,7 @@ source-repository head
 library
   exposed-modules:
       Data.Primitive.Indexed.Array
+      Data.Primitive.Indexed.PrimArray
       Data.Primitive.Indexed.Types
       Data.Primitive.Indexed.Unsafe
   hs-source-dirs:
@@ -28,4 +29,5 @@ library
       base >=4.7 && <5
     , primitive
   default-language: Haskell2010
+  ghc-options: -O2
 

@@ -9,8 +9,12 @@
 module Data.Primitive.Indexed.Unsafe
   ( Index(..)
   , Length(..)
+    -- * Immutable
   , Vector(..)
+  , PrimVector(..)
+    -- * Mutable
   , MutableVector(..)
+  , MutablePrimVector(..)
   ) where
 
 import Data.Primitive
@@ -38,4 +42,11 @@ type role Vector nominal representational
 
 newtype MutableVector n s a = MutableVector (MutableArray s a)
 type role MutableVector nominal nominal representational
+
+newtype PrimVector n a = PrimVector (PrimArray a)
+  deriving (Eq,Ord)
+type role PrimVector nominal nominal
+
+newtype MutablePrimVector n s a = MutablePrimVector (MutablePrimArray s a)
+type role MutablePrimVector nominal nominal representational
 

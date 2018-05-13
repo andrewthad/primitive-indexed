@@ -9,6 +9,7 @@ module Data.Primitive.Indexed.Types
   ( Index
   , Length
   , Vector
+  , PrimVector
   , ascendM
   , descendM
   , ascend
