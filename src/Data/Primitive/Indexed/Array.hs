@@ -15,6 +15,7 @@ module Data.Primitive.Indexed.Array
   , write
   , length
   , size
+  , thaw
   , unsafeFreeze
     -- * Array Interop
   , forget
@@ -22,6 +23,8 @@ module Data.Primitive.Indexed.Array
     -- * Functions
   , zipWith
   , reverse
+  , update
+  , accumulate
   , backpermute
   ) where
 
@@ -65,13 +68,24 @@ size :: MutableVector n s a -> Length n
 {-# INLINE size #-}
 size (MutableVector marr) = Length (sizeofMutableArray marr)
 
+-- | Pass an unindexed array to a function that operates on
+-- a vector of any length.
 with :: Array a -> (forall n. Vector n a -> b) -> b
 {-# INLINE with #-}
 with arr f = f (Vector arr)
 
+-- | Discard the phantom length associated with an indexed vector.
 forget :: Vector n a -> Array a
 {-# INLINE forget #-}
 forget (Vector arr) = arr
+
+-- | Create a mutable array from a slice of an immutable array.
+--
+-- This operation makes a copy of the immutable array, so it is safe to use the
+-- immutable array afterward.
+thaw :: PrimMonad m => Vector n a -> m (MutableVector n (PrimState m) a)
+{-# INLINE thaw #-}
+thaw (Vector arr) = fmap MutableVector (thawArray arr 0 (sizeofArray arr))
 
 -- | Freeze the mutable vector. The argument must not be reused after
 -- this function is called on it. 
@@ -97,11 +111,43 @@ reverse v = runST $ do
   
 -- | /O(n)/ Yield the vector obtained by replacing each element @i@ of the
 -- index vector by @'index' xs i@.
-backpermute :: forall n m a. Vector n a -> PrimVector m (Index n) -> Vector m a
+backpermute :: Vector n a -> PrimVector m (Index n) -> Vector m a
 backpermute v ixs = runST $ do
   let !sz = PV.length ixs
   mvec <- new sz
   ascendM (\ix -> let !a = index v (PV.index ixs ix) in write mvec ix a) sz
+  unsafeFreeze mvec
+
+-- | /O(m+n)/ For each pair @(i,a)@ from the index/value pair vectors,
+-- replace the vector element at position @i@ by @a@.
+update :: 
+     Vector n a -- ^ initial vector (of length @n@)
+  -> PrimVector m (Index n) -- ^ vector of indices
+  -> Vector m a -- ^ vector of values
+  -> Vector n a
+update v ixs vals = runST $ do
+  mvec <- thaw v
+  let !sz = length vals
+  ascendM (\ix -> let !a = index vals ix in write mvec (PV.index ixs ix) a) sz
+  unsafeFreeze mvec
+
+-- | /O(m+n)/ For each pair @(i,a)@ from the index/value pair vectors,
+-- replace the vector element at position @i@ by @f a b@.
+accumulate :: 
+     (a -> b -> a) -- ^ accumulating function @f@
+  -> Vector n a -- ^ initial vector (of length @n@)
+  -> PrimVector m (Index n) -- ^ vector of indices
+  -> Vector m b -- ^ vector of values
+  -> Vector n a
+accumulate f v ixs vals = runST $ do
+  mvec <- thaw v
+  let !sz = length vals
+  ascendM
+    (\ix -> do
+      let !ixA = PV.index ixs ix
+      a <- read mvec ixA
+      write mvec ixA (f a (index vals ix))
+    ) sz
   unsafeFreeze mvec
 
 errorThunk :: a
