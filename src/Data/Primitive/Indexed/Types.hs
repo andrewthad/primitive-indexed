@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -15,12 +16,14 @@ module Data.Primitive.Indexed.Types
   , ascend
   , descend
   , reflect
+  , offset
+  , zero
   , unindex
   , unlength
-  , modulo
   ) where
 
 import Data.Primitive.Indexed.Unsafe
+import GHC.Exts (remInt#,Int(I#))
 
 -- | A strict left monadic fold over the ascending indices from zero up to
 -- a given length.
@@ -88,8 +91,15 @@ unindex (Index n) = n
 unlength :: Length n -> Int
 unlength (Length n) = n
 
--- | Convert an integer to an index by using modulus to ensure that
--- it is bounded by the length.
-modulo :: Int -> Length n -> Index n
-modulo i (Length n) = Index (mod i n)
+-- | The existence of any index is evidence that there an index
+-- into the zero position is valid.
+zero :: Index n -> Index n
+zero _ = Index 0
 
+-- | Add an offset to an index and reduce in modulo the length
+-- to ensure that the resulting index is in bounds.
+offset :: Length n -> Int -> Index n -> Index n
+offset (Length len) off (Index ix) = Index (unsafeRem (ix + off) len)
+
+unsafeRem :: Int -> Int -> Int
+unsafeRem (I# a) (I# b) = I# (remInt# a b)
