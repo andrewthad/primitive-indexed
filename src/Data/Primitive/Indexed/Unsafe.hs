@@ -6,8 +6,16 @@
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UnboxedTuples #-}
 
+{-# OPTIONS_HADDOCK not-home #-}
+
+-- | This module exports data constructors that subvert the guarantees
+-- provided by this library. It is part of the stable API, but users
+-- should importing this take on the burden of proving that these
+-- are used safely. If there is something this module is required for,
+-- please open an issue on github.
 module Data.Primitive.Indexed.Unsafe
-  ( Index(..)
+  ( -- * Integer
+    Index(..)
   , Length(..)
     -- * Immutable
   , Vector(..)

@@ -2,8 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-{-# OPTIONS_GHC -Wall -O2 #-}
-
+-- | Arrays of boxed elements. This mimics the API of @Data.Primitive.Array@.
+-- However, all functions that deal with indices are total and cannot cause
+-- runtime crashes.
 module Data.Primitive.Indexed.Array
   ( -- * Types
     Vector
@@ -22,6 +23,7 @@ module Data.Primitive.Indexed.Array
   , forget
   , with
     -- * Functions
+    -- $functions
   , zipWith
   , reverse
   , update
@@ -46,7 +48,14 @@ replicate :: PrimMonad m => Length n -> a -> m (MutableVector n (PrimState m) a)
 {-# INLINE replicate #-}
 replicate (Length n) a = fmap MutableVector (newArray n a)
 
-
+-- | Index into a vector. Use this with functions from "Data.Primitive.Index.Types"
+-- to get a hold of indices that can be used.
+--
+-- >>> let cities = ["Cairo","Atlanta","Tokyo"] :: Array String
+-- >>> with cities $ \v -> ascendM (\ix -> putStrLn ("I ❤️ " ++ index v ix)) (length v)
+-- I ❤️ Cairo
+-- I ❤️ Atlanta
+-- I ❤️ Tokyo
 index :: Vector n a -> Index n -> a
 {-# INLINE index #-}
 index (Vector arr) (Index i) = indexArray arr i
@@ -155,3 +164,18 @@ errorThunk :: a
 {-# NOINLINE errorThunk #-}
 errorThunk = error "Data.Primitive.Indexed.Array: uninitialized element"
 
+{- $functions
+
+All of these can be safely written using the other primitives provided
+by this module. They are provided here to demonstrate how to write index-safe
+variants of functions from the @vector@ library without sacrificing performance.
+
+-}
+
+{- $setup
+ 
+These are run before each GHCi block when doctest runs.
+
+>>> :set -XOverloadedLists
+
+-}

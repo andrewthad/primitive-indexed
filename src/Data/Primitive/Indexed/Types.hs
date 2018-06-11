@@ -15,6 +15,7 @@ module Data.Primitive.Indexed.Types
   , descendM
   , ascend
   , descend
+  , with
   , reflect
   , offset
   , zero
@@ -68,6 +69,11 @@ descend f a0 (Length n) = go (n - 1) a0
   go !ix !a = if ix >= 0
     then go (ix - 1) (f a (Index ix))
     else a
+
+-- | Pass an integer length to a function that can accept any length. If the
+-- integer is below zero, this truncates it to zero.
+with :: Int -> (forall n. Index n -> a) -> a
+with n f = f (Index (max n 0))
 
 -- | Reflect an index about the middle of the length. For a length of 5 this
 -- has the following effect:
