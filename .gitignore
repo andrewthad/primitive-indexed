@@ -38,3 +38,5 @@ docs/db/unthreat
 stack.yaml
 stack.yml
 .ghc*
+dump.txt
+example.hs

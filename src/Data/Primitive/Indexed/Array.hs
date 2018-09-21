@@ -40,11 +40,11 @@ import Data.Primitive.Indexed.Types (ascendM,reflect,PrimVector)
 
 import qualified Data.Primitive.Indexed.PrimArray as PV
 
-new :: PrimMonad m => Length n -> m (MutableVector n (PrimState m) a)
+new :: PrimMonad m => Length n -> m (MutableVector (PrimState m) n a)
 {-# INLINE new #-}
 new n = replicate n errorThunk
 
-replicate :: PrimMonad m => Length n -> a -> m (MutableVector n (PrimState m) a)
+replicate :: PrimMonad m => Length n -> a -> m (MutableVector (PrimState m) n a)
 {-# INLINE replicate #-}
 replicate (Length n) a = fmap MutableVector (newArray n a)
 
@@ -60,11 +60,11 @@ index :: Vector n a -> Index n -> a
 {-# INLINE index #-}
 index (Vector arr) (Index i) = indexArray arr i
 
-read :: PrimMonad m => MutableVector n (PrimState m) a -> Index n -> m a
+read :: PrimMonad m => MutableVector (PrimState m) n a -> Index n -> m a
 {-# INLINE read #-}
 read (MutableVector marr) (Index i) = readArray marr i
 
-write :: PrimMonad m => MutableVector n (PrimState m) a -> Index n -> a -> m ()
+write :: PrimMonad m => MutableVector (PrimState m) n a -> Index n -> a -> m ()
 {-# INLINE write #-}
 write (MutableVector marr) (Index i) a = writeArray marr i a
 
@@ -74,7 +74,7 @@ length :: Vector n a -> Length n
 length (Vector arr) = Length (sizeofArray arr)
 
 -- | Get the length of a mutable vector.
-size :: MutableVector n s a -> Length n
+size :: MutableVector s n a -> Length n
 {-# INLINE size #-}
 size (MutableVector marr) = Length (sizeofMutableArray marr)
 
@@ -93,13 +93,13 @@ forget (Vector arr) = arr
 --
 -- This operation makes a copy of the immutable array, so it is safe to use the
 -- immutable array afterward.
-thaw :: PrimMonad m => Vector n a -> m (MutableVector n (PrimState m) a)
+thaw :: PrimMonad m => Vector n a -> m (MutableVector (PrimState m) n a)
 {-# INLINE thaw #-}
 thaw (Vector arr) = fmap MutableVector (thawArray arr 0 (sizeofArray arr))
 
 -- | Freeze the mutable vector. The argument must not be reused after
 -- this function is called on it. 
-unsafeFreeze :: PrimMonad m => MutableVector n (PrimState m) a -> m (Vector n a)
+unsafeFreeze :: PrimMonad m => MutableVector (PrimState m) n a -> m (Vector n a)
 {-# INLINE unsafeFreeze #-}
 unsafeFreeze (MutableVector marr) = fmap Vector (unsafeFreezeArray marr)
 

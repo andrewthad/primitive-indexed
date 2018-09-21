@@ -25,7 +25,7 @@ import Data.Primitive.Types (Prim)
 import Data.Primitive.PrimArray
 import Data.Primitive.Indexed.Unsafe (PrimVector(..),MutablePrimVector(..),Index(..),Length(..))
 
-new :: (PrimMonad m, Prim a) => Length n -> m (MutablePrimVector n (PrimState m) a)
+new :: (PrimMonad m, Prim a) => Length n -> m (MutablePrimVector (PrimState m) n a)
 {-# INLINE new #-}
 new (Length n) = fmap MutablePrimVector (newPrimArray n)
 
@@ -33,11 +33,11 @@ index :: Prim a => PrimVector n a -> Index n -> a
 {-# INLINE index #-}
 index (PrimVector arr) (Index i) = indexPrimArray arr i
 
-read :: (PrimMonad m, Prim a) => MutablePrimVector n (PrimState m) a -> Index n -> m a
+read :: (PrimMonad m, Prim a) => MutablePrimVector (PrimState m) n a -> Index n -> m a
 {-# INLINE read #-}
 read (MutablePrimVector marr) (Index i) = readPrimArray marr i
 
-write :: (PrimMonad m, Prim a) => MutablePrimVector n (PrimState m) a -> Index n -> a -> m ()
+write :: (PrimMonad m, Prim a) => MutablePrimVector (PrimState m) n a -> Index n -> a -> m ()
 {-# INLINE write #-}
 write (MutablePrimVector marr) (Index i) a = writePrimArray marr i a
 
@@ -47,7 +47,7 @@ length :: Prim a => PrimVector n a -> Length n
 length (PrimVector arr) = Length (sizeofPrimArray arr)
 
 -- | Get the length of a mutable vector.
-size :: Prim a => MutablePrimVector n s a -> Length n
+size :: Prim a => MutablePrimVector s n a -> Length n
 {-# INLINE size #-}
 size (MutablePrimVector marr) = Length (sizeofMutablePrimArray marr)
 
@@ -61,6 +61,6 @@ forget (PrimVector arr) = arr
 
 -- | Freeze the mutable vector. The argument must not be reused after
 -- this function is called on it. 
-unsafeFreeze :: PrimMonad m => MutablePrimVector n (PrimState m) a -> m (PrimVector n a)
+unsafeFreeze :: PrimMonad m => MutablePrimVector (PrimState m) n a -> m (PrimVector n a)
 {-# INLINE unsafeFreeze #-}
 unsafeFreeze (MutablePrimVector marr) = fmap PrimVector (unsafeFreezePrimArray marr)

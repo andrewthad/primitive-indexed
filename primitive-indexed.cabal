@@ -23,6 +23,7 @@ library
       Data.Primitive.Indexed.PrimArray
       Data.Primitive.Indexed.Types
       Data.Primitive.Indexed.Unsafe
+      Data.Primitive.Indexed.Class
   hs-source-dirs:
       src
   build-depends:
