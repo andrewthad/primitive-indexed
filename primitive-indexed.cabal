@@ -19,11 +19,15 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Primitive.Indexed.Array
-      Data.Primitive.Indexed.PrimArray
-      Data.Primitive.Indexed.Types
-      Data.Primitive.Indexed.Unsafe
-      Data.Primitive.Indexed.Class
+      Vector.Unsafe
+      Vector.Types
+      Vector.Index
+      Vector.Boxed
+      Vector.Unboxed
+      Vector.Generic.Polymorphic
+      Vector.Generic.Monomorphic
+      Vector.Inductive.Unlifted
+      Vector.Inductive.Boxed
   hs-source-dirs:
       src
   build-depends:
