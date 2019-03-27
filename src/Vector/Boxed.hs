@@ -35,7 +35,7 @@ module Vector.Boxed
 import Prelude hiding (read,length,zipWith,reverse,replicate)
 import Control.Monad.Primitive (PrimMonad,PrimState)
 import Control.Monad.ST (runST)
-import Data.Primitive.Array (Array,unsafeFreezeArray,sizeofArray,thawArray)
+import Data.Primitive.Array (Array,unsafeFreezeArray,sizeofArray,thawArray,newArray,readArray,indexArray,writeArray,sizeofMutableArray)
 import Vector.Unsafe (BoxedVector(..),MutableBoxedVector(..),Index(..),Length(..))
 import Vector.Index (ascendM,reflect)
 import Vector.Types (UnboxedVector)
