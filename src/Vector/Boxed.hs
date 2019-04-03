@@ -1,6 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UnboxedTuples #-}
 
 -- | Arrays of boxed elements. This mimics the API of @Data.Primitive.Array@.
 -- However, all functions that deal with indices are total and cannot cause
@@ -30,12 +32,14 @@ module Vector.Boxed
   , accumulate
   , backpermute
   , fromListN
+  , reverseFromListN
   ) where
 
 import Prelude hiding (read,length,zipWith,reverse,replicate)
 import Control.Monad.Primitive (PrimMonad,PrimState)
-import Control.Monad.ST (runST)
-import Data.Primitive.Array (Array,unsafeFreezeArray,sizeofArray,thawArray)
+import Data.Primitive.Array (Array(..),unsafeFreezeArray,sizeofArray,thawArray,writeArray,readArray,indexArray,sizeofMutableArray,newArray)
+import GHC.ST (ST(..))
+import GHC.Exts (runRW#)
 import Vector.Unsafe (BoxedVector(..),MutableBoxedVector(..),Index(..),Length(..))
 import Vector.Index (ascendM,reflect)
 import Vector.Types (UnboxedVector)
@@ -108,7 +112,7 @@ unsafeFreeze (MutableBoxedVector marr) = fmap BoxedVector (unsafeFreezeArray mar
 
 -- | Zip two vectors of equal length together by applying the given function.
 zipWith :: (a -> b -> c) -> BoxedVector n a -> BoxedVector n b -> BoxedVector n c
-zipWith f v1 v2 = runST $ do
+zipWith f v1 v2 = runVectorST $ do
   let !sz = length v1
   mvec <- new sz
   ascendM (\ix -> let !c = f (index v1 ix) (index v2 ix) in write mvec ix c) sz
@@ -116,7 +120,7 @@ zipWith f v1 v2 = runST $ do
 
 -- | Reverse a vector
 reverse :: BoxedVector n a -> BoxedVector n a
-reverse v = runST $ do
+reverse v = runVectorST $ do
   let !sz = length v
   mvec <- new sz
   ascendM (\ix -> let !a = index v ix in write mvec (reflect sz ix) a) sz
@@ -125,7 +129,7 @@ reverse v = runST $ do
 -- | /O(n)/ Yield the vector obtained by replacing each element @i@ of the
 -- index vector by @'index' xs i@.
 backpermute :: BoxedVector n a -> UnboxedVector m (Index n) -> BoxedVector m a
-backpermute v ixs = runST $ do
+backpermute v ixs = runVectorST $ do
   let !sz = PV.length ixs
   mvec <- new sz
   ascendM (\ix -> let !a = index v (PV.index ixs ix) in write mvec ix a) sz
@@ -138,7 +142,7 @@ update ::
   -> UnboxedVector m (Index n) -- ^ vector of indices
   -> BoxedVector m a -- ^ vector of values
   -> BoxedVector n a
-update v ixs vals = runST $ do
+update v ixs vals = runVectorST $ do
   mvec <- thaw v
   let !sz = length vals
   ascendM (\ix -> let !a = index vals ix in write mvec (PV.index ixs ix) a) sz
@@ -152,7 +156,7 @@ accumulate ::
   -> UnboxedVector m (Index n) -- ^ vector of indices
   -> BoxedVector m b -- ^ vector of values
   -> BoxedVector n a
-accumulate f v ixs vals = runST $ do
+accumulate f v ixs vals = runVectorST $ do
   mvec <- thaw v
   let !sz = length vals
   ascendM
@@ -164,10 +168,22 @@ accumulate f v ixs vals = runST $ do
   unsafeFreeze mvec
 
 fromListN :: Length n -> VI.BoxedInductiveVector n a -> BoxedVector n a
-fromListN !sz xs = runST $ do
+fromListN !sz xs = runVectorST $ do
   m <- new sz
   VI.traverse_ (write m) xs
   unsafeFreeze m
+
+reverseFromListN :: Length n -> VI.BoxedInductiveVector n a -> BoxedVector n a
+reverseFromListN !sz xs = runVectorST $ do
+  m <- new sz
+  VI.traverseReflected_ (write m) sz xs
+  unsafeFreeze m
+
+{-# INLINE runVectorST #-}
+runVectorST :: (forall s. ST s (BoxedVector n a)) -> BoxedVector n a
+runVectorST (ST x) =
+  case runRW# (\s0 -> case x s0 of (# s1, BoxedVector (Array y) #) -> (# s1, y #)) of
+    (# _, y #) -> BoxedVector (Array y)
 
 errorThunk :: a
 {-# NOINLINE errorThunk #-}

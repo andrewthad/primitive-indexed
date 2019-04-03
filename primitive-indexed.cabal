@@ -19,15 +19,16 @@ source-repository head
 
 library
   exposed-modules:
-      Vector.Unsafe
-      Vector.Types
-      Vector.Index
-      Vector.Boxed
-      Vector.Unboxed
-      Vector.Generic.Polymorphic
-      Vector.Generic.Monomorphic
-      Vector.Inductive.Unlifted
-      Vector.Inductive.Boxed
+    Control.Monad.ST.Run
+    Vector.Unsafe
+    Vector.Types
+    Vector.Index
+    Vector.Boxed
+    Vector.Unboxed
+    Vector.Generic.Polymorphic
+    Vector.Generic.Monomorphic
+    Vector.Inductive.Unlifted
+    Vector.Inductive.Boxed
   hs-source-dirs:
       src
   build-depends:
